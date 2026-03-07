@@ -1,43 +1,25 @@
 const express = require('express');
 const cors = require('cors');
-const { YoutubeTranscript } = require('youtube-transcript');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-
-// Enable CORS for all origins
 app.use(cors());
 
-// Health check
-app.get('/', (req, res) => {
-    res.json({ status: 'ok', message: 'Study Agent Transcript API is running' });
-});
-
-// Transcript endpoint
 app.get('/transcript', async (req, res) => {
-    const { video_id } = req.query;
+  const videoId = req.query.video_id;
+  if (!videoId) return res.status(400).json({ error: 'Missing video_id' });
 
-    if (!video_id) {
-        return res.status(400).json({ error: 'Missing video_id parameter' });
-    }
-
-    try {
-        const transcriptItems = await YoutubeTranscript.fetchTranscript(video_id);
-
-        if (!transcriptItems || transcriptItems.length === 0) {
-            return res.status(404).json({ error: 'No transcript found for this video. It may not have captions.' });
-        }
-
-        const transcript = transcriptItems.map(item => item.text).join(' ');
-        res.json({ transcript });
-    } catch (err) {
-        console.error('Transcript fetch error:', err.message);
-        res.status(500).json({
-            error: 'Failed to fetch transcript. The video may be private, age-restricted, or have no captions.'
-        });
-    }
+  try {
+    const response = await fetch(
+      `https://api.supadata.ai/v1/youtube/transcript?videoId=${videoId}&text=true`,
+      { headers: { 'x-api-key': process.env.SUPADATA_KEY } }
+    );
+    const data = await response.json();
+    if (!data.content) throw new Error('No transcript found');
+    res.json({ transcript: data.content });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
-app.listen(PORT, () => {
-    console.log(`Study Agent API running on port ${PORT}`);
-});
+app.get('/', (req, res) => res.send('Running!'));
+app.listen(process.env.PORT || 3000);
