@@ -1,0 +1,1891 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study Agent — AI-Powered Study Tools</title>
+    <meta name="description"
+        content="AI-powered study tools: solve questions from photos, write essays, generate quizzes, and create presentation slides.">
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap"
+        rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pptxgenjs/3.12.0/pptxgenjs.bundle.js"></script>
+    <style>
+        /* ═══════════════════════════════════════════════════
+   DESIGN SYSTEM
+   ═══════════════════════════════════════════════════ */
+        :root {
+            --bg-primary: #0f0f13;
+            --bg-secondary: #1a1a24;
+            --bg-card: #1e1e2e;
+            --bg-input: #252538;
+            --bg-hover: #2a2a40;
+            --border: #2e2e45;
+            --border-focus: #7c5cfc;
+            --text-primary: #e8e6f0;
+            --text-secondary: #9d9bb0;
+            --text-muted: #6b6980;
+            --accent: #7c5cfc;
+            --accent-hover: #9478ff;
+            --accent-glow: rgba(124, 92, 252, 0.25);
+            --success: #34d399;
+            --error: #f87171;
+            --warning: #fbbf24;
+            --gradient-1: linear-gradient(135deg, #7c5cfc 0%, #c084fc 100%);
+            --gradient-2: linear-gradient(135deg, #06b6d4 0%, #7c5cfc 100%);
+            --gradient-3: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+            --gradient-4: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 20px;
+            --shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+            --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.4);
+            --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent);
+        }
+
+        /* ═══════════════════════════════════════════════════
+   HEADER & API KEY
+   ═══════════════════════════════════════════════════ */
+        .app-header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(15, 15, 19, 0.85);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            padding: 12px 20px;
+        }
+
+        .header-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.25rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: var(--gradient-1);
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+        }
+
+        .api-key-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .api-key-group label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+
+        #apiKeyInput {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 8px 12px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.85rem;
+            width: 240px;
+            max-width: 45vw;
+            transition: border-color var(--transition);
+        }
+
+        #apiKeyInput:focus {
+            outline: none;
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        /* ═══════════════════════════════════════════════════
+   NAVIGATION TABS
+   ═══════════════════════════════════════════════════ */
+        .nav-tabs {
+            max-width: 1200px;
+            margin: 24px auto 0;
+            padding: 0 20px;
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .nav-tab {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-bottom: none;
+            border-radius: var(--radius-md) var(--radius-md) 0 0;
+            padding: 12px 20px;
+            color: var(--text-secondary);
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-tab:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .nav-tab.active {
+            background: var(--bg-secondary);
+            color: var(--accent);
+            border-color: var(--accent);
+            border-bottom: 1px solid var(--bg-secondary);
+        }
+
+        .nav-tab .tab-emoji {
+            font-size: 1.1rem;
+        }
+
+        /* ═══════════════════════════════════════════════════
+   MAIN CONTENT AREA
+   ═══════════════════════════════════════════════════ */
+        .main-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px 60px;
+        }
+
+        .feature-panel {
+            display: none;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 0 var(--radius-lg) var(--radius-lg) var(--radius-lg);
+            padding: 32px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .feature-panel.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .panel-header {
+            margin-bottom: 28px;
+        }
+
+        .panel-header h2 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .panel-header p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        /* ═══════════════════════════════════════════════════
+   FORM STYLES
+   ═══════════════════════════════════════════════════ */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-group label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 10px 14px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.9rem;
+            transition: border-color var(--transition);
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .form-group select {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%239d9bb0'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 32px;
+        }
+
+        /* File upload */
+        .file-upload-area {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius-md);
+            padding: 32px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all var(--transition);
+            position: relative;
+        }
+
+        .file-upload-area:hover,
+        .file-upload-area.dragover {
+            border-color: var(--accent);
+            background: var(--accent-glow);
+        }
+
+        .file-upload-area .upload-icon {
+            font-size: 2.5rem;
+            margin-bottom: 8px;
+        }
+
+        .file-upload-area p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .file-upload-area p span {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .file-upload-area input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .image-preview {
+            margin-top: 16px;
+            display: none;
+        }
+
+        .image-preview img {
+            max-width: 100%;
+            max-height: 240px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+        }
+
+        .image-preview .file-name {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 6px;
+        }
+
+        /* ═══════════════════════════════════════════════════
+   BUTTONS
+   ═══════════════════════════════════════════════════ */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 28px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+
+        .btn-primary {
+            background: var(--gradient-1);
+            color: #fff;
+            box-shadow: 0 4px 15px var(--accent-glow);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px var(--accent-glow);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-hover);
+            border-color: var(--accent);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        /* ═══════════════════════════════════════════════════
+   LOADING INDICATOR
+   ═══════════════════════════════════════════════════ */
+        .loading {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 32px;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .loading.active {
+            display: flex;
+        }
+
+        .spinner {
+            width: 28px;
+            height: 28px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* ═══════════════════════════════════════════════════
+   RESULT CONTAINER
+   ═══════════════════════════════════════════════════ */
+        .result-container {
+            margin-top: 24px;
+            display: none;
+        }
+
+        .result-container.active {
+            display: block;
+        }
+
+        .result-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 28px;
+            line-height: 1.8;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 0.95rem;
+        }
+
+        .result-box h1,
+        .result-box h2,
+        .result-box h3 {
+            color: var(--accent);
+            margin: 16px 0 8px;
+        }
+
+        .result-box h1:first-child,
+        .result-box h2:first-child,
+        .result-box h3:first-child {
+            margin-top: 0;
+        }
+
+        .result-box strong {
+            color: var(--text-primary);
+        }
+
+        .result-box ul,
+        .result-box ol {
+            padding-left: 20px;
+            margin: 8px 0;
+        }
+
+        /* ═══════════════════════════════════════════════════
+   QUIZ STYLES
+   ═══════════════════════════════════════════════════ */
+        .quiz-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .quiz-question {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 24px;
+            transition: border-color var(--transition);
+        }
+
+        .quiz-question.correct {
+            border-color: var(--success);
+            background: rgba(52, 211, 153, 0.05);
+        }
+
+        .quiz-question.incorrect {
+            border-color: var(--error);
+            background: rgba(248, 113, 113, 0.05);
+        }
+
+        .quiz-question .q-number {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .quiz-question .q-text {
+            font-size: 1.05rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .quiz-options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .quiz-option {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 10px 16px;
+            cursor: pointer;
+            transition: all var(--transition);
+            font-family: inherit;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            text-align: left;
+        }
+
+        .quiz-option:hover:not(:disabled) {
+            border-color: var(--accent);
+            background: var(--bg-hover);
+        }
+
+        .quiz-option.selected {
+            border-color: var(--accent);
+            background: var(--accent-glow);
+        }
+
+        .quiz-option.correct-answer {
+            border-color: var(--success);
+            background: rgba(52, 211, 153, 0.15);
+            color: var(--success);
+        }
+
+        .quiz-option.wrong-answer {
+            border-color: var(--error);
+            background: rgba(248, 113, 113, 0.15);
+            color: var(--error);
+        }
+
+        .quiz-input {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 10px 14px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.9rem;
+            width: 100%;
+        }
+
+        .quiz-feedback {
+            margin-top: 10px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: none;
+        }
+
+        .quiz-score-bar {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 20px 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .quiz-score-bar .score-text {
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .quiz-score-bar .score-text span {
+            color: var(--accent);
+        }
+
+        /* ═══════════════════════════════════════════════════
+   SLIDES PREVIEW
+   ═══════════════════════════════════════════════════ */
+        .slides-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .slide-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            aspect-ratio: 16/10;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            transition: transform var(--transition), box-shadow var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .slide-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .slide-card .slide-number {
+            position: absolute;
+            top: 10px;
+            right: 12px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            background: var(--bg-input);
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+
+        .slide-card h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: var(--accent);
+        }
+
+        .slide-card .slide-body {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 5;
+            line-clamp: 5;
+            -webkit-box-orient: vertical;
+        }
+
+        /* ═══════════════════════════════════════════════════
+   COPY BUTTON
+   ═══════════════════════════════════════════════════ */
+        .result-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .result-header h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .btn-copy {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 6px 14px;
+            color: var(--text-secondary);
+            font-family: inherit;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-copy:hover {
+            background: var(--bg-hover);
+            border-color: var(--accent);
+            color: var(--text-primary);
+        }
+
+        .btn-copy.copied {
+            border-color: var(--success);
+            color: var(--success);
+        }
+
+        /* ═══════════════════════════════════════════════════
+   ERROR MESSAGE
+   ═══════════════════════════════════════════════════ */
+        .error-msg {
+            background: rgba(248, 113, 113, 0.1);
+            border: 1px solid var(--error);
+            border-radius: var(--radius-sm);
+            padding: 12px 16px;
+            color: var(--error);
+            font-size: 0.9rem;
+            margin-top: 16px;
+            display: none;
+        }
+
+        .error-msg.active {
+            display: block;
+        }
+
+        /* ═══════════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════════ */
+        @media (max-width: 768px) {
+            .header-inner {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .logo {
+                justify-content: center;
+            }
+
+            .api-key-group {
+                justify-content: center;
+            }
+
+            #apiKeyInput {
+                width: 100%;
+                max-width: 100%;
+            }
+
+            .nav-tabs {
+                gap: 4px;
+                justify-content: center;
+            }
+
+            .nav-tab {
+                padding: 10px 14px;
+                font-size: 0.8rem;
+                flex: 1;
+                justify-content: center;
+                min-width: 0;
+            }
+
+            .nav-tab .tab-label {
+                display: none;
+            }
+
+            .nav-tab .tab-emoji {
+                font-size: 1.3rem;
+            }
+
+            .feature-panel {
+                padding: 20px 16px;
+                border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .panel-header h2 {
+                font-size: 1.3rem;
+            }
+
+            .slides-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .nav-tab {
+                padding: 10px 8px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ═══════════════════════ HEADER ═══════════════════════ -->
+    <header class="app-header">
+        <div class="header-inner">
+            <div class="logo">
+                <div class="logo-icon">🎓</div>
+                <span>Study Agent</span>
+            </div>
+            <div class="api-key-group">
+                <label for="apiKeyInput">🔑 API Key</label>
+                <input type="password" id="apiKeyInput" placeholder="Enter your Gemini API key" autocomplete="off">
+            </div>
+        </div>
+    </header>
+
+    <!-- ═══════════════════════ TABS ═══════════════════════ -->
+    <nav class="nav-tabs" id="navTabs">
+        <button class="nav-tab active" data-tab="solver" id="tab-solver">
+            <span class="tab-emoji">📸</span>
+            <span class="tab-label">Question Solver</span>
+        </button>
+        <button class="nav-tab" data-tab="essay" id="tab-essay">
+            <span class="tab-emoji">✍️</span>
+            <span class="tab-label">Essay Writer</span>
+        </button>
+        <button class="nav-tab" data-tab="quiz" id="tab-quiz">
+            <span class="tab-emoji">❓</span>
+            <span class="tab-label">Question Maker</span>
+        </button>
+        <button class="nav-tab" data-tab="slides" id="tab-slides">
+            <span class="tab-emoji">📊</span>
+            <span class="tab-label">Slides Creator</span>
+        </button>
+        <button class="nav-tab" data-tab="humanizer" id="tab-humanizer">
+            <span class="tab-emoji">✏️</span>
+            <span class="tab-label">Humanizer</span>
+        </button>
+        <button class="nav-tab" data-tab="youtube" id="tab-youtube">
+            <span class="tab-emoji">🎥</span>
+            <span class="tab-label">YouTube Notes</span>
+        </button>
+    </nav>
+
+    <!-- ═══════════════════════ MAIN ═══════════════════════ -->
+    <main class="main-content">
+
+        <!-- ─────────── QUESTION SOLVER ─────────── -->
+        <section class="feature-panel active" id="panel-solver">
+            <div class="panel-header">
+                <h2>📸 Question Solver</h2>
+                <p>Upload a photo of your homework question and get a detailed step-by-step solution.</p>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group full-width">
+                    <label>Upload Question Image</label>
+                    <div class="file-upload-area" id="solverUploadArea">
+                        <div class="upload-icon">📷</div>
+                        <p>Drag & drop or <span>click to browse</span></p>
+                        <p style="font-size:0.75rem; margin-top:4px; color:var(--text-muted)">Supports JPG, PNG, GIF,
+                            WEBP</p>
+                        <input type="file" id="solverFileInput" accept="image/*">
+                    </div>
+                    <div class="image-preview" id="solverPreview">
+                        <img id="solverPreviewImg" alt="Preview">
+                        <div class="file-name" id="solverFileName"></div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="solverSubject">Subject</label>
+                    <select id="solverSubject">
+                        <option value="Math">Math</option>
+                        <option value="Science">Science</option>
+                        <option value="History">History</option>
+                        <option value="Language">Language</option>
+                        <option value="Hebrew">Hebrew (עברית)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn btn-primary" id="solverBtn" onclick="solveQuestion()">
+                    ✨ Solve Question
+                </button>
+            </div>
+
+            <div class="loading" id="solverLoading">
+                <div class="spinner"></div>Analyzing your question...
+            </div>
+            <div class="error-msg" id="solverError"></div>
+            <div class="result-container" id="solverResult">
+                <div class="result-box" id="solverResultContent"></div>
+            </div>
+        </section>
+
+        <!-- ─────────── ESSAY WRITER ─────────── -->
+        <section class="feature-panel" id="panel-essay">
+            <div class="panel-header">
+                <h2>✍️ Essay Writer</h2>
+                <p>Generate a well-structured essay on any topic with your preferred style and length.</p>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group full-width">
+                    <label for="essayTopic">Essay Topic</label>
+                    <input type="text" id="essayTopic" placeholder="e.g. The Impact of Social Media on Teenagers">
+                </div>
+                <div class="form-group">
+                    <label for="essayType">Essay Type</label>
+                    <select id="essayType">
+                        <option value="Argumentative">Argumentative</option>
+                        <option value="Expository">Expository</option>
+                        <option value="Persuasive">Persuasive</option>
+                        <option value="Narrative">Narrative</option>
+                        <option value="Compare & Contrast">Compare & Contrast</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="essayGrade">Grade Level</label>
+                    <select id="essayGrade">
+                        <option value="Middle School (6-8)">Middle School (6-8)</option>
+                        <option value="High School (9-10)">High School (9-10)</option>
+                        <option value="High School (11-12)" selected>High School (11-12)</option>
+                        <option value="College Freshman">College Freshman</option>
+                        <option value="College">College</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="essayLength">Length</label>
+                    <select id="essayLength">
+                        <option value="Short (300 words)">Short (~300 words)</option>
+                        <option value="Medium (500 words)" selected>Medium (~500 words)</option>
+                        <option value="Long (800 words)">Long (~800 words)</option>
+                        <option value="Extended (1200 words)">Extended (~1200 words)</option>
+                    </select>
+                </div>
+                <div class="form-group full-width">
+                    <label for="essayNotes">Additional Notes (optional)</label>
+                    <textarea id="essayNotes" placeholder="Any specific points, sources, or requirements..."></textarea>
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn btn-primary" id="essayBtn" onclick="writeEssay()">
+                    ✨ Write Essay
+                </button>
+            </div>
+
+            <div class="loading" id="essayLoading">
+                <div class="spinner"></div>Writing your essay...
+            </div>
+            <div class="error-msg" id="essayError"></div>
+            <div class="result-container" id="essayResult">
+                <div class="result-box" id="essayResultContent"></div>
+            </div>
+        </section>
+
+        <!-- ─────────── QUESTION MAKER ─────────── -->
+        <section class="feature-panel" id="panel-quiz">
+            <div class="panel-header">
+                <h2>❓ Question Maker</h2>
+                <p>Paste your notes or enter a topic to generate an interactive quiz with score tracking.</p>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group full-width">
+                    <label for="quizTopic">Notes or Topic</label>
+                    <textarea id="quizTopic" placeholder="Paste your study notes or enter a topic..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="quizType">Question Type</label>
+                    <select id="quizType">
+                        <option value="Multiple Choice">Multiple Choice</option>
+                        <option value="True/False">True / False</option>
+                        <option value="Short Answer">Short Answer</option>
+                        <option value="Fill in the Blank">Fill in the Blank</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="quizCount">Number of Questions</label>
+                    <select id="quizCount">
+                        <option value="5" selected>5</option>
+                        <option value="10">10</option>
+                        <option value="15">15</option>
+                        <option value="20">20</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="quizDifficulty">Difficulty</label>
+                    <select id="quizDifficulty">
+                        <option value="Easy">Easy</option>
+                        <option value="Medium" selected>Medium</option>
+                        <option value="Hard">Hard</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn btn-primary" id="quizBtn" onclick="makeQuiz()">
+                    ✨ Generate Quiz
+                </button>
+            </div>
+
+            <div class="loading" id="quizLoading">
+                <div class="spinner"></div>Generating questions...
+            </div>
+            <div class="error-msg" id="quizError"></div>
+            <div class="result-container" id="quizResult">
+                <div class="quiz-score-bar" id="quizScoreBar" style="display:none;">
+                    <div class="score-text">Score: <span id="quizScoreText">0 / 0</span></div>
+                    <button class="btn btn-secondary" onclick="resetQuiz()">🔄 Retake Quiz</button>
+                </div>
+                <div class="quiz-container" id="quizContainer"></div>
+            </div>
+        </section>
+
+        <!-- ─────────── SLIDES CREATOR ─────────── -->
+        <section class="feature-panel" id="panel-slides">
+            <div class="panel-header">
+                <h2>📊 Slides Creator</h2>
+                <p>Generate presentation slides from a topic and download as a real .PPTX file.</p>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group full-width">
+                    <label for="slideTopic">Presentation Topic</label>
+                    <input type="text" id="slideTopic" placeholder="e.g. Climate Change: Causes and Solutions">
+                </div>
+                <div class="form-group">
+                    <label for="slideSubject">Subject</label>
+                    <select id="slideSubject">
+                        <option value="Science">Science</option>
+                        <option value="History">History</option>
+                        <option value="Literature">Literature</option>
+                        <option value="Math">Math</option>
+                        <option value="Technology">Technology</option>
+                        <option value="Business">Business</option>
+                        <option value="General">General</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="slideCount">Number of Slides</label>
+                    <select id="slideCount">
+                        <option value="5">5</option>
+                        <option value="8" selected>8</option>
+                        <option value="10">10</option>
+                        <option value="12">12</option>
+                        <option value="15">15</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="slideStyle">Style</label>
+                    <select id="slideStyle">
+                        <option value="Professional">Professional</option>
+                        <option value="Academic">Academic</option>
+                        <option value="Creative">Creative</option>
+                        <option value="Minimalist">Minimalist</option>
+                    </select>
+                </div>
+                <div class="form-group full-width">
+                    <label for="slideNotes">Additional Notes (optional)</label>
+                    <textarea id="slideNotes" placeholder="Any specific points or content to include..."></textarea>
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn btn-primary" id="slidesBtn" onclick="createSlides()">
+                    ✨ Generate Slides
+                </button>
+            </div>
+
+            <div class="loading" id="slidesLoading">
+                <div class="spinner"></div>Creating your presentation...
+            </div>
+            <div class="error-msg" id="slidesError"></div>
+            <div class="result-container" id="slidesResult">
+                <div class="btn-group" style="margin-bottom:16px;">
+                    <button class="btn btn-primary" id="downloadPptxBtn" onclick="downloadPptx()" style="display:none;">
+                        ⬇️ Download .PPTX
+                    </button>
+                </div>
+                <div class="slides-grid" id="slidesGrid"></div>
+            </div>
+        </section>
+
+        <!-- ─────────── HUMANIZER ─────────── -->
+        <section class="feature-panel" id="panel-humanizer">
+            <div class="panel-header">
+                <h2>✏️ Humanizer</h2>
+                <p>Paste AI-written text and rewrite it to sound like a real student wrote it.</p>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group full-width">
+                    <label for="humanizeInput">Paste AI-Written Text</label>
+                    <textarea id="humanizeInput" placeholder="Paste the AI-generated text you want to humanize..."
+                        style="min-height:160px;"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="humanizeTone">Tone</label>
+                    <select id="humanizeTone">
+                        <option value="Casual">Casual</option>
+                        <option value="Formal">Formal</option>
+                        <option value="Student" selected>Student</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="humanizeStrength">Strength</label>
+                    <select id="humanizeStrength">
+                        <option value="Light">Light</option>
+                        <option value="Medium" selected>Medium</option>
+                        <option value="Heavy">Heavy</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn btn-primary" id="humanizeBtn" onclick="humanizeText()">
+                    ✨ Humanize
+                </button>
+            </div>
+
+            <div class="loading" id="humanizerLoading">
+                <div class="spinner"></div>Humanizing your text...
+            </div>
+            <div class="error-msg" id="humanizerError"></div>
+            <div class="result-container" id="humanizerResult">
+                <div class="result-header">
+                    <h3>Humanized Output</h3>
+                    <button class="btn-copy" onclick="copyToClipboard('humanizerResultContent', this)">📋 Copy</button>
+                </div>
+                <div class="result-box" id="humanizerResultContent"></div>
+            </div>
+        </section>
+
+        <!-- ─────────── YOUTUBE NOTES ─────────── -->
+        <section class="feature-panel" id="panel-youtube">
+            <div class="panel-header">
+                <h2>🎥 YouTube Notes</h2>
+                <p>Paste a YouTube video URL to automatically fetch the transcript and generate organized study notes.
+                </p>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group full-width">
+                    <label for="youtubeUrl">YouTube Video URL</label>
+                    <input type="text" id="youtubeUrl" placeholder="e.g. https://www.youtube.com/watch?v=dQw4w9WgXcQ">
+                </div>
+                <div class="form-group">
+                    <label for="youtubeLang">Notes Language</label>
+                    <select id="youtubeLang">
+                        <option value="English" selected>English</option>
+                        <option value="Hebrew">עברית (Hebrew)</option>
+                        <option value="Spanish">Español (Spanish)</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn btn-primary" id="youtubeBtn" onclick="generateYouTubeNotes()">
+                    ✨ Generate Notes
+                </button>
+            </div>
+
+            <div class="loading" id="youtubeLoading">
+                <div class="spinner"></div>Fetching transcript & generating notes...
+            </div>
+            <div class="error-msg" id="youtubeError"></div>
+            <div class="result-container" id="youtubeResult">
+                <div class="result-header">
+                    <h3>Study Notes</h3>
+                    <button class="btn-copy" onclick="copyToClipboard('youtubeResultContent', this)">📋 Copy</button>
+                </div>
+                <div class="result-box" id="youtubeResultContent"></div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        /* ═══════════════════════════════════════════════════
+           CONFIGURATION
+           ═══════════════════════════════════════════════════ */
+        // Change this to your Render.com backend URL after deploying
+        const BACKEND_URL = 'http://localhost:3000';
+
+        /* ═══════════════════════════════════════════════════
+           TAB NAVIGATION
+           ═══════════════════════════════════════════════════ */
+        document.querySelectorAll('.nav-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.feature-panel').forEach(p => p.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
+            });
+        });
+
+        /* ═══════════════════════════════════════════════════
+           FILE UPLOAD HANDLING
+           ═══════════════════════════════════════════════════ */
+        let solverImageBase64 = null;
+        let solverImageMime = null;
+
+        const uploadArea = document.getElementById('solverUploadArea');
+        const fileInput = document.getElementById('solverFileInput');
+        const preview = document.getElementById('solverPreview');
+        const previewImg = document.getElementById('solverPreviewImg');
+        const fileName = document.getElementById('solverFileName');
+
+        ['dragenter', 'dragover'].forEach(e => {
+            uploadArea.addEventListener(e, ev => { ev.preventDefault(); uploadArea.classList.add('dragover'); });
+        });
+        ['dragleave', 'drop'].forEach(e => {
+            uploadArea.addEventListener(e, ev => { ev.preventDefault(); uploadArea.classList.remove('dragover'); });
+        });
+        uploadArea.addEventListener('drop', ev => {
+            if (ev.dataTransfer.files.length) handleFile(ev.dataTransfer.files[0]);
+        });
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length) handleFile(fileInput.files[0]);
+        });
+
+        function handleFile(file) {
+            if (!file.type.startsWith('image/')) return;
+            solverImageMime = file.type;
+            const reader = new FileReader();
+            reader.onload = e => {
+                const dataUrl = e.target.result;
+                solverImageBase64 = dataUrl.split(',')[1];
+                previewImg.src = dataUrl;
+                fileName.textContent = file.name;
+                preview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        /* ═══════════════════════════════════════════════════
+           GEMINI API HELPER
+           ═══════════════════════════════════════════════════ */
+        function getApiKey() {
+            const key = document.getElementById('apiKeyInput').value.trim();
+            if (!key) throw new Error('Please enter your Gemini API key in the header.');
+            return key;
+        }
+
+        async function callGemini(parts) {
+            const key = getApiKey();
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts }],
+                    generationConfig: {
+                        temperature: 0.7,
+                        maxOutputTokens: 8192
+                    }
+                })
+            });
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData?.error?.message || `API Error: ${res.status} ${res.statusText}`);
+            }
+            const data = await res.json();
+            if (!data.candidates || !data.candidates[0]?.content?.parts?.[0]?.text) {
+                throw new Error('Unexpected API response. Please check your API key and try again.');
+            }
+            return data.candidates[0].content.parts[0].text;
+        }
+
+        function showLoading(id) { document.getElementById(id).classList.add('active'); }
+        function hideLoading(id) { document.getElementById(id).classList.remove('active'); }
+        function showError(id, msg) { const el = document.getElementById(id); el.textContent = msg; el.classList.add('active'); }
+        function hideError(id) { document.getElementById(id).classList.remove('active'); }
+        function showResult(id) { document.getElementById(id).classList.add('active'); }
+        function hideResult(id) { document.getElementById(id).classList.remove('active'); }
+
+        function setButtonLoading(btn, loading) {
+            btn.disabled = loading;
+        }
+
+        /* ═══════════════════════════════════════════════════
+           SIMPLE MARKDOWN RENDERER
+           ═══════════════════════════════════════════════════ */
+        function renderMarkdown(text) {
+            let html = text
+                // Code blocks
+                .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
+                // Bold
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                // Italic
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                // Headers
+                .replace(/^### (.*$)/gm, '<h3>$1</h3>')
+                .replace(/^## (.*$)/gm, '<h2>$1</h2>')
+                .replace(/^# (.*$)/gm, '<h1>$1</h1>')
+                // Horizontal rules
+                .replace(/^---$/gm, '<hr>')
+                // Line breaks
+                .replace(/\n/g, '<br>');
+            return html;
+        }
+
+        /* ═══════════════════════════════════════════════════
+           1. QUESTION SOLVER
+           ═══════════════════════════════════════════════════ */
+        async function solveQuestion() {
+            const btn = document.getElementById('solverBtn');
+            hideError('solverError');
+            hideResult('solverResult');
+
+            try {
+                if (!solverImageBase64) throw new Error('Please upload an image of your question first.');
+
+                const subject = document.getElementById('solverSubject').value;
+                const isHebrew = subject === 'Hebrew';
+
+                let promptText;
+                if (isHebrew) {
+                    promptText = `אתה מורה מומחה בעברית. נתח את שאלת השיעורים בתמונה ופתור אותה צעד אחר צעד.
+
+ספק:
+1. **זיהוי השאלה** — מה השאלה שואלת
+2. **פתרון צעד אחר צעד** — הסבר כל צעד בבהירות
+3. **תשובה סופית** — הדגש את התשובה הסופית
+4. **טיפ** — טיפ שימושי לשאלות דומות
+
+ענה בעברית בלבד.`;
+                } else {
+                    promptText = `You are an expert ${subject} tutor. Analyze the homework question in the image and solve it step by step.
+
+Provide:
+1. **Question Identified** — What the question is asking
+2. **Step-by-Step Solution** — Explain each step clearly
+3. **Final Answer** — Highlight the final answer clearly
+4. **Tip** — A useful tip for similar questions
+
+Use clear formatting with headers and bullet points.`;
+                }
+
+                const parts = [
+                    { text: promptText },
+                    { inline_data: { mime_type: solverImageMime, data: solverImageBase64 } }
+                ];
+
+                setButtonLoading(btn, true);
+                showLoading('solverLoading');
+
+                const result = await callGemini(parts);
+                document.getElementById('solverResultContent').innerHTML = renderMarkdown(result);
+                showResult('solverResult');
+            } catch (err) {
+                showError('solverError', err.message);
+            } finally {
+                hideLoading('solverLoading');
+                setButtonLoading(btn, false);
+            }
+        }
+
+        /* ═══════════════════════════════════════════════════
+           2. ESSAY WRITER
+           ═══════════════════════════════════════════════════ */
+        async function writeEssay() {
+            const btn = document.getElementById('essayBtn');
+            hideError('essayError');
+            hideResult('essayResult');
+
+            try {
+                const topic = document.getElementById('essayTopic').value.trim();
+                if (!topic) throw new Error('Please enter an essay topic.');
+
+                const type = document.getElementById('essayType').value;
+                const grade = document.getElementById('essayGrade').value;
+                const length = document.getElementById('essayLength').value;
+                const notes = document.getElementById('essayNotes').value.trim();
+
+                const prompt = `You are an expert academic writer. Write a ${type} essay on the following topic:
+
+Topic: "${topic}"
+Grade Level: ${grade}
+Target Length: ${length}
+${notes ? `Additional notes/requirements: ${notes}` : ''}
+
+Requirements:
+- Write a complete, well-structured essay with a clear introduction, body paragraphs, and conclusion
+- Use appropriate vocabulary and complexity for the ${grade} level
+- Include a compelling thesis statement
+- Use transition words between paragraphs
+- Format with clear paragraph breaks
+
+Output the essay with a bold title at the top, followed by the full essay text. Use markdown formatting.`;
+
+                setButtonLoading(btn, true);
+                showLoading('essayLoading');
+
+                const result = await callGemini([{ text: prompt }]);
+                document.getElementById('essayResultContent').innerHTML = renderMarkdown(result);
+                showResult('essayResult');
+            } catch (err) {
+                showError('essayError', err.message);
+            } finally {
+                hideLoading('essayLoading');
+                setButtonLoading(btn, false);
+            }
+        }
+
+        /* ═══════════════════════════════════════════════════
+           3. QUESTION MAKER
+           ═══════════════════════════════════════════════════ */
+        let quizData = [];
+        let quizScore = 0;
+        let quizAnswered = 0;
+
+        async function makeQuiz() {
+            const btn = document.getElementById('quizBtn');
+            hideError('quizError');
+            hideResult('quizResult');
+            quizData = [];
+            quizScore = 0;
+            quizAnswered = 0;
+
+            try {
+                const topic = document.getElementById('quizTopic').value.trim();
+                if (!topic) throw new Error('Please enter notes or a topic.');
+
+                const type = document.getElementById('quizType').value;
+                const count = document.getElementById('quizCount').value;
+                const difficulty = document.getElementById('quizDifficulty').value;
+
+                let formatInstructions = '';
+                if (type === 'Multiple Choice') {
+                    formatInstructions = `Each question must have "options" (array of 4 strings) and "answer" (the correct option string).`;
+                } else if (type === 'True/False') {
+                    formatInstructions = `Each question must have "options": ["True", "False"] and "answer" (either "True" or "False").`;
+                } else if (type === 'Short Answer') {
+                    formatInstructions = `Each question must have "answer" (a short 1-3 word answer). No "options" field.`;
+                } else if (type === 'Fill in the Blank') {
+                    formatInstructions = `Write the question with a blank shown as "______". Each question must have "answer" (the word/phrase that fills the blank). No "options" field.`;
+                }
+
+                const prompt = `Generate exactly ${count} ${type} quiz questions about the following topic/notes.
+Difficulty: ${difficulty}
+
+Topic/Notes:
+${topic}
+
+Return ONLY a valid JSON array (no markdown, no code fences). Each object in the array must have:
+- "question": the question text
+${formatInstructions}
+
+Example format for reference:
+[{"question": "What is...?", "options": ["A", "B", "C", "D"], "answer": "A"}]
+
+IMPORTANT: Return ONLY the raw JSON array, no other text.`;
+
+                setButtonLoading(btn, true);
+                showLoading('quizLoading');
+
+                const result = await callGemini([{ text: prompt }]);
+
+                // Parse JSON from result
+                let jsonStr = result.trim();
+                // Remove code fences if present
+                jsonStr = jsonStr.replace(/^```(?:json)?\n?/i, '').replace(/\n?```$/i, '');
+                quizData = JSON.parse(jsonStr);
+
+                if (!Array.isArray(quizData) || quizData.length === 0) {
+                    throw new Error('Failed to generate questions. Please try again.');
+                }
+
+                renderQuiz(type);
+                showResult('quizResult');
+            } catch (err) {
+                showError('quizError', err.message);
+            } finally {
+                hideLoading('quizLoading');
+                setButtonLoading(btn, false);
+            }
+        }
+
+        function renderQuiz(type) {
+            const container = document.getElementById('quizContainer');
+            container.innerHTML = '';
+            const scoreBar = document.getElementById('quizScoreBar');
+            scoreBar.style.display = 'flex';
+            updateScoreDisplay();
+
+            quizData.forEach((q, i) => {
+                const div = document.createElement('div');
+                div.className = 'quiz-question';
+                div.id = `quiz-q-${i}`;
+
+                let optionsHtml = '';
+                if (q.options && q.options.length > 0) {
+                    optionsHtml = `<div class="quiz-options" id="quiz-opts-${i}">
+        ${q.options.map((opt, j) => `<button class="quiz-option" onclick="selectOption(${i}, ${j}, this)">${opt}</button>`).join('')}
+      </div>`;
+                } else {
+                    optionsHtml = `<div class="quiz-options" id="quiz-opts-${i}">
+        <input type="text" class="quiz-input" id="quiz-input-${i}" placeholder="Type your answer..." onkeydown="if(event.key==='Enter')checkTextAnswer(${i})">
+        <button class="btn btn-secondary" style="margin-top:8px;align-self:flex-start;" onclick="checkTextAnswer(${i})">Check Answer</button>
+      </div>`;
+                }
+
+                div.innerHTML = `
+      <div class="q-number">Question ${i + 1} of ${quizData.length}</div>
+      <div class="q-text">${q.question}</div>
+      ${optionsHtml}
+      <div class="quiz-feedback" id="quiz-fb-${i}"></div>
+    `;
+                container.appendChild(div);
+            });
+        }
+
+        function selectOption(qIndex, optIndex, btnEl) {
+            const qDiv = document.getElementById(`quiz-q-${qIndex}`);
+            if (qDiv.classList.contains('correct') || qDiv.classList.contains('incorrect')) return; // already answered
+
+            const q = quizData[qIndex];
+            const optsDiv = document.getElementById(`quiz-opts-${qIndex}`);
+            const buttons = optsDiv.querySelectorAll('.quiz-option');
+            const fb = document.getElementById(`quiz-fb-${qIndex}`);
+
+            const selected = q.options[optIndex];
+            const isCorrect = selected === q.answer;
+
+            buttons.forEach(b => b.disabled = true);
+            btnEl.classList.add(isCorrect ? 'correct-answer' : 'wrong-answer');
+
+            if (!isCorrect) {
+                // Highlight correct
+                buttons.forEach(b => {
+                    if (b.textContent === q.answer) b.classList.add('correct-answer');
+                });
+            }
+
+            qDiv.classList.add(isCorrect ? 'correct' : 'incorrect');
+            fb.style.display = 'block';
+            fb.style.color = isCorrect ? 'var(--success)' : 'var(--error)';
+            fb.textContent = isCorrect ? '✓ Correct!' : `✗ Incorrect. The answer is: ${q.answer}`;
+
+            if (isCorrect) quizScore++;
+            quizAnswered++;
+            updateScoreDisplay();
+        }
+
+        function checkTextAnswer(qIndex) {
+            const qDiv = document.getElementById(`quiz-q-${qIndex}`);
+            if (qDiv.classList.contains('correct') || qDiv.classList.contains('incorrect')) return;
+
+            const q = quizData[qIndex];
+            const input = document.getElementById(`quiz-input-${qIndex}`);
+            const userAnswer = input.value.trim();
+            if (!userAnswer) return;
+
+            const fb = document.getElementById(`quiz-fb-${qIndex}`);
+            const isCorrect = userAnswer.toLowerCase() === q.answer.toLowerCase();
+
+            input.disabled = true;
+            qDiv.classList.add(isCorrect ? 'correct' : 'incorrect');
+            fb.style.display = 'block';
+            fb.style.color = isCorrect ? 'var(--success)' : 'var(--error)';
+            fb.textContent = isCorrect ? '✓ Correct!' : `✗ Incorrect. The answer is: ${q.answer}`;
+
+            if (isCorrect) quizScore++;
+            quizAnswered++;
+            updateScoreDisplay();
+        }
+
+        function updateScoreDisplay() {
+            document.getElementById('quizScoreText').textContent = `${quizScore} / ${quizData.length}`;
+        }
+
+        function resetQuiz() {
+            quizScore = 0;
+            quizAnswered = 0;
+            const type = document.getElementById('quizType').value;
+            renderQuiz(type);
+        }
+
+        /* ═══════════════════════════════════════════════════
+           4. SLIDES CREATOR
+           ═══════════════════════════════════════════════════ */
+        let slidesData = [];
+
+        async function createSlides() {
+            const btn = document.getElementById('slidesBtn');
+            hideError('slidesError');
+            hideResult('slidesResult');
+            slidesData = [];
+
+            try {
+                const topic = document.getElementById('slideTopic').value.trim();
+                if (!topic) throw new Error('Please enter a presentation topic.');
+
+                const subject = document.getElementById('slideSubject').value;
+                const count = document.getElementById('slideCount').value;
+                const style = document.getElementById('slideStyle').value;
+                const notes = document.getElementById('slideNotes').value.trim();
+
+                const prompt = `Create a ${style} presentation about "${topic}" for a ${subject} class.
+
+Number of slides: ${count}
+${notes ? `Additional notes: ${notes}` : ''}
+
+Return ONLY a valid JSON array (no markdown, no code fences). Each slide is an object with:
+- "title": slide title (string)
+- "bullets": array of 3-5 bullet point strings for the slide content
+
+The first slide should be a title slide (title = presentation title, bullets = subtitle/overview points).
+The last slide should be a summary/conclusion slide.
+
+IMPORTANT: Return ONLY the raw JSON array, no other text.`;
+
+                setButtonLoading(btn, true);
+                showLoading('slidesLoading');
+
+                const result = await callGemini([{ text: prompt }]);
+
+                let jsonStr = result.trim();
+                jsonStr = jsonStr.replace(/^```(?:json)?\n?/i, '').replace(/\n?```$/i, '');
+                slidesData = JSON.parse(jsonStr);
+
+                if (!Array.isArray(slidesData) || slidesData.length === 0) {
+                    throw new Error('Failed to generate slides. Please try again.');
+                }
+
+                renderSlidesPreview();
+                document.getElementById('downloadPptxBtn').style.display = 'inline-flex';
+                showResult('slidesResult');
+            } catch (err) {
+                showError('slidesError', err.message);
+            } finally {
+                hideLoading('slidesLoading');
+                setButtonLoading(btn, false);
+            }
+        }
+
+        function renderSlidesPreview() {
+            const grid = document.getElementById('slidesGrid');
+            grid.innerHTML = '';
+
+            slidesData.forEach((slide, i) => {
+                const card = document.createElement('div');
+                card.className = 'slide-card';
+                card.innerHTML = `
+      <span class="slide-number">${i + 1} / ${slidesData.length}</span>
+      <h3>${slide.title}</h3>
+      <div class="slide-body">${(slide.bullets || []).map(b => '• ' + b).join('<br>')}</div>
+    `;
+                grid.appendChild(card);
+            });
+        }
+
+        function downloadPptx() {
+            if (!slidesData.length) return;
+
+            const pptx = new PptxGenJS();
+            pptx.layout = 'LAYOUT_WIDE';
+
+            // Theme colors
+            const bgColor = '0F0F13';
+            const titleColor = '7C5CFC';
+            const bulletColor = 'E8E6F0';
+            const subtitleColor = '9D9BB0';
+
+            slidesData.forEach((slideData, i) => {
+                const slide = pptx.addSlide();
+                slide.background = { color: bgColor };
+
+                if (i === 0) {
+                    // Title slide
+                    slide.addText(slideData.title, {
+                        x: 0.8, y: 1.5, w: '85%', h: 1.5,
+                        fontSize: 36, fontFace: 'Arial',
+                        color: titleColor, bold: true,
+                        align: 'center'
+                    });
+                    if (slideData.bullets && slideData.bullets.length > 0) {
+                        slide.addText(slideData.bullets.join(', '), {
+                            x: 0.8, y: 3.2, w: '85%', h: 1,
+                            fontSize: 16, fontFace: 'Arial',
+                            color: subtitleColor, align: 'center'
+                        });
+                    }
+                } else {
+                    // Content slide
+                    slide.addText(slideData.title, {
+                        x: 0.6, y: 0.4, w: '90%', h: 0.8,
+                        fontSize: 28, fontFace: 'Arial',
+                        color: titleColor, bold: true,
+                        align: 'left'
+                    });
+
+                    // Accent line
+                    slide.addShape(pptx.ShapeType.rect, {
+                        x: 0.6, y: 1.2, w: 2, h: 0.04,
+                        fill: { color: titleColor }
+                    });
+
+                    if (slideData.bullets && slideData.bullets.length > 0) {
+                        const bulletText = slideData.bullets.map(b => ({
+                            text: b,
+                            options: {
+                                fontSize: 16, fontFace: 'Arial',
+                                color: bulletColor, bullet: { code: '25CF', color: titleColor },
+                                paraSpaceAfter: 12, lineSpacing: 24
+                            }
+                        }));
+
+                        slide.addText(bulletText, {
+                            x: 0.6, y: 1.5, w: '88%', h: 4,
+                            valign: 'top'
+                        });
+                    }
+                }
+            });
+
+            const safeName = document.getElementById('slideTopic').value.trim().replace(/[^a-zA-Z0-9 ]/g, '').replace(/\s+/g, '_') || 'Presentation';
+            pptx.writeFile({ fileName: `${safeName}.pptx` });
+        }
+
+        /* ═══════════════════════════════════════════════════
+           5. HUMANIZER
+           ═══════════════════════════════════════════════════ */
+        async function humanizeText() {
+            const btn = document.getElementById('humanizeBtn');
+            hideError('humanizerError');
+            hideResult('humanizerResult');
+
+            try {
+                const inputText = document.getElementById('humanizeInput').value.trim();
+                if (!inputText) throw new Error('Please paste some text to humanize.');
+
+                const tone = document.getElementById('humanizeTone').value;
+                const strength = document.getElementById('humanizeStrength').value;
+
+                const prompt = `Rewrite this text to sound like a real student wrote it. Remove AI patterns, vary sentence length, add natural imperfections, keep the same meaning. Tone: ${tone}. Strength: ${strength}.
+
+Here is the text to rewrite:
+
+${inputText}`;
+
+                setButtonLoading(btn, true);
+                showLoading('humanizerLoading');
+
+                const result = await callGemini([{ text: prompt }]);
+                document.getElementById('humanizerResultContent').innerHTML = renderMarkdown(result);
+                showResult('humanizerResult');
+            } catch (err) {
+                showError('humanizerError', err.message);
+            } finally {
+                hideLoading('humanizerLoading');
+                setButtonLoading(btn, false);
+            }
+        }
+
+        /* ═══════════════════════════════════════════════════
+           6. YOUTUBE NOTES
+           ═══════════════════════════════════════════════════ */
+        function extractVideoId(url) {
+            const patterns = [
+                /(?:youtube\.com\/watch\?v=)([a-zA-Z0-9_-]{11})/,
+                /(?:youtu\.be\/)([a-zA-Z0-9_-]{11})/,
+                /(?:youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
+                /(?:youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/
+            ];
+            for (const p of patterns) {
+                const match = url.match(p);
+                if (match) return match[1];
+            }
+            return null;
+        }
+
+        async function generateYouTubeNotes() {
+            const btn = document.getElementById('youtubeBtn');
+            hideError('youtubeError');
+            hideResult('youtubeResult');
+
+            try {
+                const ytUrl = document.getElementById('youtubeUrl').value.trim();
+                if (!ytUrl) throw new Error('Please paste a YouTube video URL.');
+
+                const videoId = extractVideoId(ytUrl);
+                if (!videoId) throw new Error('Could not extract a valid video ID from the URL. Please check the format.');
+
+                const language = document.getElementById('youtubeLang').value;
+
+                setButtonLoading(btn, true);
+                showLoading('youtubeLoading');
+
+                // Fetch transcript from our backend
+                const transcriptRes = await fetch(`${BACKEND_URL}/transcript?video_id=${videoId}`);
+                const transcriptData = await transcriptRes.json();
+
+                if (!transcriptRes.ok || transcriptData.error) {
+                    throw new Error(transcriptData.error || 'Failed to fetch transcript from backend.');
+                }
+
+                const transcriptText = transcriptData.transcript;
+                if (!transcriptText || transcriptText.length < 50) {
+                    throw new Error('The transcript is too short or empty. The video may not have captions.');
+                }
+
+                const langInstruction = language !== 'English' ? `\nThe transcript is in ${language}. Write the notes in ${language}.` : '';
+
+                const prompt = `You are a student note-taker. Read this YouTube video transcript and create clear, organized study notes with:
+- 📋 Summary (3-4 sentences)
+- 🔑 Key Points (bullet points)
+- 📚 Important Terms & Definitions
+- ❓ 3 Quiz Questions with answers
+
+Format it clearly with headers and bullet points.${langInstruction}
+
+Transcript:
+${transcriptText}`;
+
+                const result = await callGemini([{ text: prompt }]);
+                document.getElementById('youtubeResultContent').innerHTML = renderMarkdown(result);
+                showResult('youtubeResult');
+            } catch (err) {
+                showError('youtubeError', err.message);
+            } finally {
+                hideLoading('youtubeLoading');
+                setButtonLoading(btn, false);
+            }
+        }
+
+        /* ═══════════════════════════════════════════════════
+           COPY TO CLIPBOARD
+           ═══════════════════════════════════════════════════ */
+        function copyToClipboard(elementId, btnEl) {
+            const el = document.getElementById(elementId);
+            const text = el.innerText || el.textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                btnEl.textContent = '✅ Copied!';
+                btnEl.classList.add('copied');
+                setTimeout(() => {
+                    btnEl.textContent = '📋 Copy';
+                    btnEl.classList.remove('copied');
+                }, 2000);
+            }).catch(() => {
+                // Fallback for older browsers
+                const range = document.createRange();
+                range.selectNodeContents(el);
+                const sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(range);
+                document.execCommand('copy');
+                sel.removeAllRanges();
+                btnEl.textContent = '✅ Copied!';
+                btnEl.classList.add('copied');
+                setTimeout(() => {
+                    btnEl.textContent = '📋 Copy';
+                    btnEl.classList.remove('copied');
+                }, 2000);
+            });
+        }
+
+        /* ═══════════════════════════════════════════════════
+           PERSIST API KEY
+           ═══════════════════════════════════════════════════ */
+        const apiInput = document.getElementById('apiKeyInput');
+        apiInput.value = localStorage.getItem('studyAgent_apiKey') || '';
+        apiInput.addEventListener('input', () => {
+            localStorage.setItem('studyAgent_apiKey', apiInput.value);
+        });
+    </script>
+</body>
+
+</html>
