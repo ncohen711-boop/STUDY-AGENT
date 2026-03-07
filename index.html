@@ -761,23 +761,6 @@
                 justify-content: center;
             }
 
-            .api-key-group {
-                justify-content: center;
-                gap: 8px;
-            }
-
-            #apiKeyInput {
-                width: 100%;
-                max-width: 100%;
-            }
-
-            .clear-key-link {
-                font-size: 0.8rem;
-                color: var(--text-muted);
-                cursor: pointer;
-                text-decoration: underline;
-            }
-
             .nav-tabs {
                 gap: 4px;
                 justify-content: center;
@@ -833,11 +816,6 @@
             <div class="logo">
                 <div class="logo-icon">🎓</div>
                 <span>Study Agent</span>
-            </div>
-            <div class="api-key-group">
-                <label for="apiKeyInput">🔑 API Key</label>
-                <input type="password" id="apiKeyInput" placeholder="Enter your Gemini API key" autocomplete="off">
-                <span class="clear-key-link" onclick="clearApiKey()">Clear</span>
             </div>
         </div>
     </header>
@@ -1300,14 +1278,7 @@
         /* ═══════════════════════════════════════════════════
            GEMINI API HELPER (calling our secure backend)
            ═══════════════════════════════════════════════════ */
-        function getApiKey() {
-            const key = document.getElementById('apiKeyInput').value.trim();
-            if (!key) throw new Error('Please enter your Gemini API key in the header.');
-            return key;
-        }
-
         async function callGemini(parts) {
-            const apiKey = getApiKey();
             let prompt = '';
             let image = null;
             let mimeType = null;
@@ -1320,12 +1291,12 @@
                 }
             });
 
-            // Pass the API key securely inside the body to the backend proxy
+            // Call the backend proxy directly
             const url = `${BACKEND_URL}/api/gemini`;
             const res = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt: prompt.trim(), image, mimeType, apiKey })
+                body: JSON.stringify({ prompt: prompt.trim(), image, mimeType })
             });
 
             if (!res.ok) {
@@ -2340,19 +2311,6 @@ ${transcriptText}`;
             });
         }
 
-        /* ═══════════════════════════════════════════════════
-           PERSIST API KEY
-           ═══════════════════════════════════════════════════ */
-        const apiInput = document.getElementById('apiKeyInput');
-        apiInput.value = localStorage.getItem('gemini_key') || '';
-        apiInput.addEventListener('input', () => {
-            localStorage.setItem('gemini_key', apiInput.value);
-        });
-
-        function clearApiKey() {
-            localStorage.removeItem('gemini_key');
-            apiInput.value = '';
-        }
     </script>
 </body>
 
