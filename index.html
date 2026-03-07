@@ -761,10 +761,6 @@
                 justify-content: center;
             }
 
-            .api-key-group {
-                justify-content: center;
-            }
-
             #apiKeyInput {
                 width: 100%;
                 max-width: 100%;
@@ -825,10 +821,6 @@
             <div class="logo">
                 <div class="logo-icon">🎓</div>
                 <span>Study Agent</span>
-            </div>
-            <div class="api-key-group">
-                <label for="apiKeyInput">🔑 API Key</label>
-                <input type="password" id="apiKeyInput" placeholder="Enter your Gemini API key" autocomplete="off">
             </div>
         </div>
     </header>
@@ -1266,37 +1258,38 @@
         }
 
         /* ═══════════════════════════════════════════════════
-           GEMINI API HELPER
+           GEMINI API HELPER (calling our secure backend)
            ═══════════════════════════════════════════════════ */
-        function getApiKey() {
-            const key = document.getElementById('apiKeyInput').value.trim();
-            if (!key) throw new Error('Please enter your Gemini API key in the header.');
-            return key;
-        }
-
         async function callGemini(parts) {
-            const key = getApiKey();
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
+            let prompt = '';
+            let image = null;
+            let mimeType = null;
+
+            parts.forEach(part => {
+                if (part.text) prompt += part.text + '\n';
+                if (part.inline_data) {
+                    mimeType = part.inline_data.mime_type;
+                    image = part.inline_data.data;
+                }
+            });
+
+            const url = `${BACKEND_URL}/api/gemini`;
             const res = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts }],
-                    generationConfig: {
-                        temperature: 0.7,
-                        maxOutputTokens: 8192
-                    }
-                })
+                body: JSON.stringify({ prompt: prompt.trim(), image, mimeType })
             });
+
             if (!res.ok) {
                 const errData = await res.json().catch(() => ({}));
-                throw new Error(errData?.error?.message || `API Error: ${res.status} ${res.statusText}`);
+                throw new Error(errData?.error || `API Error: ${res.status} ${res.statusText}`);
             }
+
             const data = await res.json();
-            if (!data.candidates || !data.candidates[0]?.content?.parts?.[0]?.text) {
-                throw new Error('Unexpected API response. Please check your API key and try again.');
+            if (!data.result) {
+                throw new Error('Unexpected API response. Please try again.');
             }
-            return data.candidates[0].content.parts[0].text;
+            return data.result;
         }
 
         function showLoading(id) { document.getElementById(id).classList.add('active'); }
