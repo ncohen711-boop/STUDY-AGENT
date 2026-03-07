@@ -1709,11 +1709,22 @@ IMPORTANT: Return ONLY the raw JSON array, no other text.`;
             pptx.writeFile({ fileName: `Study_Agent_Slides.pptx` });
         }
 
+        let savedTopic = '';
+        let savedSubject = '';
+        let savedStyle = '';
+        let savedNotes = '';
+
         function initGoogleSlidesAuth() {
             const btn = document.getElementById('googleSlidesBtn');
             const originalText = btn.innerHTML;
             btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px;margin-right:8px;"></div> Authenticating...';
             btn.disabled = true;
+
+            // Capture DOM values BEFORE starting OAuth to prevent null errors in callback
+            savedTopic = document.getElementById('slideTopic')?.value.trim() || '';
+            savedSubject = document.getElementById('slideSubject')?.value || '';
+            savedStyle = document.getElementById('slideStyle')?.value || '';
+            savedNotes = document.getElementById('slideNotes')?.value.trim() || '';
 
             try {
                 const client = google.accounts.oauth2.initTokenClient({
@@ -1746,8 +1757,7 @@ IMPORTANT: Return ONLY the raw JSON array, no other text.`;
                 if (!slidesData || slidesData.length === 0) throw new Error('No slides to create.');
 
                 // 1. Create a blank presentation
-                const topicEl = document.getElementById('slideTopic');
-                const title = (topicEl ? topicEl.value.trim() : '') || 'Study Agent Presentation';
+                const title = savedTopic || 'Study Agent Presentation';
                 const createRes = await fetch('https://slides.googleapis.com/v1/presentations', {
                     method: 'POST',
                     headers: {
