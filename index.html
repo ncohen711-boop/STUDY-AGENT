@@ -1621,13 +1621,19 @@ IMPORTANT: Return ONLY the raw JSON array, no other text.`;
             slidesData = [];
 
             try {
-                const topic = document.getElementById('slideTopic').value.trim();
+                const topicEl = document.getElementById('slideTopic');
+                const subjectEl = document.getElementById('slideSubject');
+                const countEl = document.getElementById('slideCount');
+                const styleEl = document.getElementById('slideStyle');
+                const notesEl = document.getElementById('slideNotes');
+
+                const topic = topicEl ? topicEl.value.trim() : '';
                 if (!topic) throw new Error('Please enter a presentation topic.');
 
-                const subject = document.getElementById('slideSubject').value;
-                const count = document.getElementById('slideCount').value;
-                const style = document.getElementById('slideStyle').value;
-                const notes = document.getElementById('slideNotes').value.trim();
+                const subject = subjectEl ? subjectEl.value : '';
+                const count = countEl ? countEl.value : '';
+                const style = styleEl ? styleEl.value : '';
+                const notes = notesEl ? notesEl.value.trim() : '';
 
                 const prompt = `Create a ${style} presentation about "${topic}" for a ${subject} class.
 
@@ -1740,7 +1746,8 @@ IMPORTANT: Return ONLY the raw JSON array, no other text.`;
                 if (!slidesData || slidesData.length === 0) throw new Error('No slides to create.');
 
                 // 1. Create a blank presentation
-                const title = document.getElementById('slidesTopic').value.trim() || 'Study Agent Presentation';
+                const topicEl = document.getElementById('slideTopic');
+                const title = (topicEl ? topicEl.value.trim() : '') || 'Study Agent Presentation';
                 const createRes = await fetch('https://slides.googleapis.com/v1/presentations', {
                     method: 'POST',
                     headers: {
@@ -1977,7 +1984,9 @@ IMPORTANT: Return ONLY the raw JSON array, no other text.`;
                 }
             });
 
-            const safeName = document.getElementById('slidesTopic').value.trim().replace(/[^a-zA-Z0-9 ]/g, '').replace(/\s+/g, '_') || 'Study_Agent_Slides';
+            const topicEl = document.getElementById('slideTopic');
+            const topicValue = topicEl ? topicEl.value.trim() : '';
+            const safeName = topicValue.replace(/[^a-zA-Z0-9 ]/g, '').replace(/\s+/g, '_') || 'Study_Agent_Slides';
             pptx.writeFile({ fileName: `${safeName}.pptx` });
         }
 
