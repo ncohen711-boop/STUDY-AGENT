@@ -1750,14 +1750,26 @@ IMPORTANT: Return ONLY the raw JSON array, no other text.`;
         }
 
         async function createGoogleSlides(btn, originalText) {
+            console.log('--- Debug: createGoogleSlides ---');
+            console.log('slidesData:', slidesData);
+            console.log('token:', googleAccessToken);
+            console.log('topic el:', document.getElementById('slideTopic'));
+
             btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px;margin-right:8px;"></div> Creating Slides...';
             hideError('slidesError');
 
             try {
-                if (!slidesData || slidesData.length === 0) throw new Error('No slides to create.');
+                if (!googleAccessToken) {
+                    throw new Error('Google access token is missing. Please try authenticating again.');
+                }
+
+                if (!slidesData || slidesData.length === 0) {
+                    throw new Error('No slides data found. Please generate slides first.');
+                }
 
                 // 1. Create a blank presentation
-                const title = savedTopic || 'Study Agent Presentation';
+                const title = slidesData[0]?.title || 'My Presentation';
+
                 const createRes = await fetch('https://slides.googleapis.com/v1/presentations', {
                     method: 'POST',
                     headers: {
