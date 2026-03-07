@@ -761,9 +761,21 @@
                 justify-content: center;
             }
 
+            .api-key-group {
+                justify-content: center;
+                gap: 8px;
+            }
+
             #apiKeyInput {
                 width: 100%;
                 max-width: 100%;
+            }
+
+            .clear-key-link {
+                font-size: 0.8rem;
+                color: var(--text-muted);
+                cursor: pointer;
+                text-decoration: underline;
             }
 
             .nav-tabs {
@@ -822,6 +834,11 @@
                 <div class="logo-icon">🎓</div>
                 <span>Study Agent</span>
             </div>
+            <div class="api-key-group">
+                <label for="apiKeyInput">🔑 API Key</label>
+                <input type="password" id="apiKeyInput" placeholder="Enter your Gemini API key" autocomplete="off">
+                <span class="clear-key-link" onclick="clearApiKey()">Clear</span>
+            </div>
         </div>
     </header>
 
@@ -846,6 +863,10 @@
         <button class="nav-tab" data-tab="humanizer" id="tab-humanizer">
             <span class="tab-emoji">✏️</span>
             <span class="tab-label">Humanizer</span>
+        </button>
+        <button class="nav-tab" data-tab="history" id="tab-history">
+            <span class="tab-emoji">📚</span>
+            <span class="tab-label">History</span>
         </button>
         <button class="nav-tab" data-tab="youtube" id="tab-youtube">
             <span class="tab-emoji">🎥</span>
@@ -1192,6 +1213,25 @@
             </div>
         </section>
 
+        <!-- ─────────── HISTORY ─────────── -->
+        <section class="feature-panel" id="panel-history">
+            <div class="panel-header"
+                style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:16px; margin-bottom:24px;">
+                <div>
+                    <h2>📚 History</h2>
+                    <p>View your past generated content. (Max 50 items)</p>
+                </div>
+                <button class="btn btn-secondary" style="border-color:var(--error); color:var(--error);"
+                    onclick="clearHistory()">
+                    🗑️ Clear All History
+                </button>
+            </div>
+
+            <div id="historyList" style="display:flex; flex-direction:column; gap:16px;">
+                <!-- History items will be injected here -->
+            </div>
+        </section>
+
     </main>
 
     <script>
@@ -1260,7 +1300,14 @@
         /* ═══════════════════════════════════════════════════
            GEMINI API HELPER (calling our secure backend)
            ═══════════════════════════════════════════════════ */
+        function getApiKey() {
+            const key = document.getElementById('apiKeyInput').value.trim();
+            if (!key) throw new Error('Please enter your Gemini API key in the header.');
+            return key;
+        }
+
         async function callGemini(parts) {
+            const apiKey = getApiKey();
             let prompt = '';
             let image = null;
             let mimeType = null;
@@ -1273,11 +1320,12 @@
                 }
             });
 
+            // Pass the API key securely inside the body to the backend proxy
             const url = `${BACKEND_URL}/api/gemini`;
             const res = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt: prompt.trim(), image, mimeType })
+                body: JSON.stringify({ prompt: prompt.trim(), image, mimeType, apiKey })
             });
 
             if (!res.ok) {
@@ -1373,6 +1421,15 @@ Use clear formatting with headers and bullet points.`;
                 const result = await callGemini(parts);
                 document.getElementById('solverResultContent').innerHTML = renderMarkdown(result);
                 showResult('solverResult');
+
+                // Save to History
+                saveToHistory({
+                    type: 'solver',
+                    icon: '📸',
+                    title: `${subject} question`,
+                    content: result,
+                    date: new Date().toISOString()
+                });
             } catch (err) {
                 showError('solverError', err.message);
             } finally {
@@ -1420,6 +1477,15 @@ Output the essay with a bold title at the top, followed by the full essay text. 
                 const result = await callGemini([{ text: prompt }]);
                 document.getElementById('essayResultContent').innerHTML = renderMarkdown(result);
                 showResult('essayResult');
+
+                // Save to History
+                saveToHistory({
+                    type: 'essay',
+                    icon: '✍️',
+                    title: topic,
+                    content: result,
+                    date: new Date().toISOString()
+                });
             } catch (err) {
                 showError('essayError', err.message);
             } finally {
@@ -1494,6 +1560,15 @@ IMPORTANT: Return ONLY the raw JSON array, no other text.`;
 
                 renderQuiz(type);
                 showResult('quizResult');
+
+                // Save to History
+                saveToHistory({
+                    type: 'quiz',
+                    icon: '❓',
+                    title: topic,
+                    content: JSON.stringify(quizData),
+                    date: new Date().toISOString()
+                });
             } catch (err) {
                 showError('quizError', err.message);
             } finally {
@@ -1659,6 +1734,15 @@ IMPORTANT: Return ONLY the raw JSON array, no other text.`;
                 document.getElementById('downloadPptxBtn').style.display = 'inline-flex';
                 document.getElementById('googleSlidesBtn').style.display = 'inline-flex';
                 showResult('slidesResult');
+
+                // Save to History
+                saveToHistory({
+                    type: 'slides',
+                    icon: '📊',
+                    title: topic,
+                    content: JSON.stringify(slidesData),
+                    date: new Date().toISOString()
+                });
             } catch (err) {
                 showError('slidesError', err.message);
             } finally {
@@ -2032,6 +2116,15 @@ ${inputText}`;
                 const result = await callGemini([{ text: prompt }]);
                 document.getElementById('humanizerResultContent').innerHTML = renderMarkdown(result);
                 showResult('humanizerResult');
+
+                // Save to History
+                saveToHistory({
+                    type: 'humanizer',
+                    icon: '✏️',
+                    title: 'Humanized text',
+                    content: result,
+                    date: new Date().toISOString()
+                });
             } catch (err) {
                 showError('humanizerError', err.message);
             } finally {
@@ -2101,6 +2194,15 @@ ${transcriptText}`;
                 const result = await callGemini([{ text: prompt }]);
                 document.getElementById('youtubeResultContent').innerHTML = renderMarkdown(result);
                 showResult('youtubeResult');
+
+                // Save to History
+                saveToHistory({
+                    type: 'youtube',
+                    icon: '🎥',
+                    title: ytUrl,
+                    content: result,
+                    date: new Date().toISOString()
+                });
             } catch (err) {
                 showError('youtubeError', err.message);
             } finally {
@@ -2108,6 +2210,104 @@ ${transcriptText}`;
                 setButtonLoading(btn, false);
             }
         }
+
+        /* ═══════════════════════════════════════════════════
+           7. HISTORY TAB LOGIC
+           ═══════════════════════════════════════════════════ */
+        function loadHistory() {
+            try {
+                return JSON.parse(localStorage.getItem('study_history')) || [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function saveToHistory(item) {
+            let history = loadHistory();
+            history.unshift(item); // Add newest first
+            if (history.length > 50) {
+                history = history.slice(0, 50); // Keep max 50
+            }
+            localStorage.setItem('study_history', JSON.stringify(history));
+            renderHistory();
+        }
+
+        function clearHistory() {
+            if (confirm("Are you sure you want to clear all history? This cannot be undone.")) {
+                localStorage.removeItem('study_history');
+                renderHistory();
+            }
+        }
+
+        function deleteHistoryItem(index) {
+            let history = loadHistory();
+            history.splice(index, 1);
+            localStorage.setItem('study_history', JSON.stringify(history));
+            renderHistory();
+        }
+
+        function toggleHistoryContent(index, btnEl) {
+            const contentDiv = document.getElementById(`history-content-${index}`);
+            if (contentDiv.style.display === 'none') {
+                contentDiv.style.display = 'block';
+                btnEl.innerHTML = '👁️ Hide';
+            } else {
+                contentDiv.style.display = 'none';
+                btnEl.innerHTML = '👁️ View';
+            }
+        }
+
+        function renderHistory() {
+            const container = document.getElementById('historyList');
+            const history = loadHistory();
+
+            if (history.length === 0) {
+                container.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding: 32px 0;">No history yet — start generating content!</div>';
+                return;
+            }
+
+            container.innerHTML = '';
+            history.forEach((item, index) => {
+                const dateObj = new Date(item.date);
+                const dateStr = dateObj.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }) + ' at ' + dateObj.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+
+                const card = document.createElement('div');
+                card.className = 'history-card list-mode';
+                card.style.cssText = 'background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); padding:16px; margin-bottom:12px;';
+
+                let displayContentHtml = '';
+                if (item.type === 'quiz' || item.type === 'slides') {
+                    // It's JSON formatted
+                    displayContentHtml = `<pre style="white-space:pre-wrap; font-size:0.9rem; color:var(--text-muted); background:#0B0E14; padding:12px; border-radius:6px;">${item.content}</pre>`;
+                } else {
+                    displayContentHtml = `<div class="history-content-text" style="font-size:0.9rem; margin-top:12px; padding:12px; background:#0B0E14; border-radius:6px; color:var(--text); line-height:1.6;">${renderMarkdown(item.content)}</div>`;
+                }
+
+                card.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div style="flex:1;">
+                            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                                <span style="font-size:1.2rem;">${item.icon}</span>
+                                <span style="font-size:0.8rem; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted);">${item.type}</span>
+                            </div>
+                            <h3 style="margin:0 0 4px 0; font-size:1.1rem; font-weight:600;">${item.title}</h3>
+                            <div style="font-size:0.8rem; color:var(--text-muted);">${dateStr}</div>
+                        </div>
+                        <div style="display:flex; gap:8px;">
+                            <button class="btn btn-secondary" style="padding:6px 12px; font-size:0.9rem;" onclick="toggleHistoryContent(${index}, this)">👁️ View</button>
+                            <button class="btn" style="padding:6px 12px; font-size:0.9rem; background:transparent; border:1px solid var(--error); color:var(--error);" onclick="deleteHistoryItem(${index})">🗑️ Delete</button>
+                        </div>
+                    </div>
+                    <div id="history-content-${index}" style="display:none; margin-top:16px; border-top:1px solid var(--border); padding-top:16px;">
+                        ${displayContentHtml}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Initialize history on load
+        renderHistory();
 
         /* ═══════════════════════════════════════════════════
            COPY TO CLIPBOARD
@@ -2144,10 +2344,15 @@ ${transcriptText}`;
            PERSIST API KEY
            ═══════════════════════════════════════════════════ */
         const apiInput = document.getElementById('apiKeyInput');
-        apiInput.value = localStorage.getItem('studyAgent_apiKey') || '';
+        apiInput.value = localStorage.getItem('gemini_key') || '';
         apiInput.addEventListener('input', () => {
-            localStorage.setItem('studyAgent_apiKey', apiInput.value);
+            localStorage.setItem('gemini_key', apiInput.value);
         });
+
+        function clearApiKey() {
+            localStorage.removeItem('gemini_key');
+            apiInput.value = '';
+        }
     </script>
 </body>
 
