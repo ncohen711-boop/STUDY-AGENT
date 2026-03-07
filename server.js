@@ -9,8 +9,9 @@ app.get('/transcript', async (req, res) => {
   if (!videoId) return res.status(400).json({ error: 'Missing video_id' });
 
   try {
+    const ytUrl = `https://www.youtube.com/watch?v=${videoId}`;
     const response = await fetch(
-      `https://api.supadata.ai/v1/youtube/transcript?videoId=${videoId}&text=true`,
+      `https://api.supadata.ai/v1/youtube/transcript?url=${encodeURIComponent(ytUrl)}&text=true`,
       { headers: { 'x-api-key': process.env.SUPADATA_KEY } }
     );
     const data = await response.json();
