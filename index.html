@@ -319,7 +319,27 @@
             margin: 0 auto;
             display: flex;
             align-items: center;
+            justify-content: space-between;
+        }
+
+        .home-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
             justify-content: center;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+
+        .home-btn:hover {
+            background: var(--hover);
+            border-color: #fff;
+            transform: scale(1.08);
         }
 
         .logo {
@@ -1117,10 +1137,11 @@
         <!-- ═══════════════════════ HEADER ═══════════════════════ -->
         <header class="app-header">
             <div class="header-inner">
-                <div class="logo">
+                <div class="logo" onclick="goHome()" style="cursor:pointer;">
                     <div class="logo-icon">S</div>
                     <span>Study Agent</span>
                 </div>
+                <button class="home-btn" onclick="goHome()" title="Back to Home">🏠</button>
             </div>
         </header>
 
@@ -2608,6 +2629,18 @@ ${transcriptText}`;
             document.getElementById('homepage').style.display = 'none';
             document.getElementById('appWrapper').classList.add('active');
             switchTab(tab);
+        }
+
+        function goHome() {
+            document.getElementById('appWrapper').classList.remove('active');
+            const hp = document.getElementById('homepage');
+            hp.style.display = '';
+            // Re-trigger card animations
+            hp.querySelectorAll('.home-card, .home-cta').forEach(el => {
+                el.style.animation = 'none';
+                el.offsetHeight; // force reflow
+                el.style.animation = '';
+            });
         }
 
     </script>
