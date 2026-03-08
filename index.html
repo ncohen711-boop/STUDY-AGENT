@@ -1026,6 +1026,110 @@
         }
 
         /* ═══════════════════════════════════════════════════
+   MIC BUTTON
+   ═══════════════════════════════════════════════════ */
+        .input-with-mic {
+            position: relative;
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .input-with-mic input,
+        .input-with-mic textarea {
+            flex: 1;
+        }
+
+        .mic-btn {
+            width: 38px;
+            height: 38px;
+            min-width: 38px;
+            border-radius: 50%;
+            border: 1px solid var(--border);
+            background: #fff;
+            color: #000;
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--transition);
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        .mic-btn:hover {
+            background: var(--accent-hover);
+            transform: scale(1.08);
+        }
+
+        .mic-btn.recording {
+            background: #ff4444;
+            color: #fff;
+            border-color: #ff4444;
+            animation: micPulse 1s ease-in-out infinite;
+        }
+
+        @keyframes micPulse {
+
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 rgba(255, 68, 68, 0.5);
+            }
+
+            50% {
+                box-shadow: 0 0 0 10px rgba(255, 68, 68, 0);
+            }
+        }
+
+        /* ═══════════════════════════════════════════════════
+   BOTTOM NAV (mobile)
+   ═══════════════════════════════════════════════════ */
+        .bottom-nav {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 200;
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+            padding: 6px 0 max(6px, env(safe-area-inset-bottom));
+            justify-content: space-around;
+        }
+
+        .bottom-nav-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            background: none;
+            border: none;
+            color: var(--muted);
+            font-family: inherit;
+            font-size: 0.6rem;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 4px 2px;
+            min-width: 44px;
+            min-height: 44px;
+            justify-content: center;
+            transition: color var(--transition);
+        }
+
+        .bottom-nav-btn .bnav-icon {
+            font-size: 1.2rem;
+        }
+
+        .bottom-nav-btn.active {
+            color: #fff;
+        }
+
+        .bottom-nav-btn:active {
+            transform: scale(0.92);
+        }
+
+        /* ═══════════════════════════════════════════════════
    RESPONSIVE
    ═══════════════════════════════════════════════════ */
         @media (max-width: 768px) {
@@ -1034,16 +1138,19 @@
             }
 
             .nav-tabs-mobile {
+                display: none !important;
+            }
+
+            .bottom-nav {
                 display: flex;
             }
 
             .main-content {
-                padding: 20px 16px 60px;
+                padding: 16px 12px 90px;
             }
 
             .feature-panel {
-                padding: 24px 18px;
-                border-radius: var(--radius);
+                padding: 20px 16px;
             }
 
             .form-grid {
@@ -1057,10 +1164,36 @@
             .slides-grid {
                 grid-template-columns: 1fr;
             }
+
+            /* iOS zoom prevention */
+            .form-group input,
+            .form-group select,
+            .form-group textarea,
+            .quiz-input {
+                font-size: 16px;
+            }
+
+            /* Larger touch targets */
+            .btn {
+                min-height: 44px;
+                padding: 12px 24px;
+            }
+
+            .btn-copy {
+                min-height: 44px;
+            }
+
+            .quiz-option {
+                min-height: 44px;
+            }
         }
 
         @media (min-width: 769px) {
             .nav-tabs-mobile {
+                display: none !important;
+            }
+
+            .bottom-nav {
                 display: none !important;
             }
         }
@@ -1218,8 +1351,12 @@
                     <div class="form-grid">
                         <div class="form-group full-width">
                             <label for="essayTopic">Essay Topic</label>
-                            <input type="text" id="essayTopic"
-                                placeholder="e.g. The Impact of Social Media on Teenagers">
+                            <div class="input-with-mic">
+                                <input type="text" id="essayTopic"
+                                    placeholder="e.g. The Impact of Social Media on Teenagers">
+                                <button type="button" class="mic-btn" onclick="startVoiceInput('essayTopic', this)"
+                                    title="Voice input">🎤</button>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label for="essayType">Essay Type</label>
@@ -1282,8 +1419,12 @@
                     <div class="form-grid">
                         <div class="form-group full-width">
                             <label for="quizTopic">Notes or Topic</label>
-                            <textarea id="quizTopic"
-                                placeholder="Paste your study notes or enter a topic..."></textarea>
+                            <div class="input-with-mic">
+                                <textarea id="quizTopic"
+                                    placeholder="Paste your study notes or enter a topic..."></textarea>
+                                <button type="button" class="mic-btn" onclick="startVoiceInput('quizTopic', this)"
+                                    title="Voice input">🎤</button>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label for="quizType">Question Type</label>
@@ -1342,7 +1483,12 @@
                     <div class="form-grid">
                         <div class="form-group full-width">
                             <label for="slideTopic">Presentation Topic</label>
-                            <input type="text" id="slideTopic" placeholder="e.g. Climate Change: Causes and Solutions">
+                            <div class="input-with-mic">
+                                <input type="text" id="slideTopic"
+                                    placeholder="e.g. Climate Change: Causes and Solutions">
+                                <button type="button" class="mic-btn" onclick="startVoiceInput('slideTopic', this)"
+                                    title="Voice input">🎤</button>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label for="slideSubject">Subject</label>
@@ -1417,9 +1563,13 @@
                     <div class="form-grid">
                         <div class="form-group full-width">
                             <label for="humanizeInput">Paste AI-Written Text</label>
-                            <textarea id="humanizeInput"
-                                placeholder="Paste the AI-generated text you want to humanize..."
-                                style="min-height:160px;"></textarea>
+                            <div class="input-with-mic">
+                                <textarea id="humanizeInput"
+                                    placeholder="Paste the AI-generated text you want to humanize..."
+                                    style="min-height:160px;"></textarea>
+                                <button type="button" class="mic-btn" onclick="startVoiceInput('humanizeInput', this)"
+                                    title="Voice input">🎤</button>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label for="humanizeTone">Tone</label>
@@ -1526,6 +1676,18 @@
 
             </main>
         </div> <!-- .app-layout -->
+
+        <!-- BOTTOM NAV (mobile) -->
+        <nav class="bottom-nav" id="bottomNav">
+            <button class="bottom-nav-btn active" data-tab="solver"><span class="bnav-icon">📸</span>Solver</button>
+            <button class="bottom-nav-btn" data-tab="essay"><span class="bnav-icon">✍️</span>Essay</button>
+            <button class="bottom-nav-btn" data-tab="quiz"><span class="bnav-icon">❓</span>Quiz</button>
+            <button class="bottom-nav-btn" data-tab="slides"><span class="bnav-icon">📊</span>Slides</button>
+            <button class="bottom-nav-btn" data-tab="humanizer"><span class="bnav-icon">✏️</span>Text</button>
+            <button class="bottom-nav-btn" data-tab="youtube"><span class="bnav-icon">🎥</span>Video</button>
+            <button class="bottom-nav-btn" data-tab="history"><span class="bnav-icon">📚</span>History</button>
+        </nav>
+
     </div> <!-- .app-wrapper -->
 
     <script>
@@ -1550,12 +1712,15 @@
             // Update mobile tabs
             document.querySelectorAll('.mobile-tab').forEach(b => b.classList.remove('active'));
             document.querySelectorAll(`.mobile-tab[data-tab="${tabName}"]`).forEach(b => b.classList.add('active'));
+            // Update bottom nav
+            document.querySelectorAll('.bottom-nav-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll(`.bottom-nav-btn[data-tab="${tabName}"]`).forEach(b => b.classList.add('active'));
             // Update panels
             document.querySelectorAll('.feature-panel').forEach(p => p.classList.remove('active'));
             document.getElementById('panel-' + tabName).classList.add('active');
         }
 
-        document.querySelectorAll('.sidebar-btn, .mobile-tab').forEach(btn => {
+        document.querySelectorAll('.sidebar-btn, .mobile-tab, .bottom-nav-btn').forEach(btn => {
             btn.addEventListener('click', () => switchTab(btn.dataset.tab));
         });
 
@@ -2626,6 +2791,25 @@ ${transcriptText}`;
                 el.offsetHeight; // force reflow
                 el.style.animation = '';
             });
+        }
+
+        /* ═══════════════════════════════════════════════════
+           VOICE INPUT (Web Speech API)
+           ═══════════════════════════════════════════════════ */
+        function startVoiceInput(targetElementId, btnEl) {
+            const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SR) { alert('Voice input requires Chrome browser'); return; }
+            const r = new SR();
+            r.continuous = false;
+            r.interimResults = false;
+            r.lang = 'en-US';
+            btnEl.classList.add('recording');
+            r.onresult = (e) => {
+                document.getElementById(targetElementId).value += e.results[0][0].transcript;
+            };
+            r.onerror = () => { btnEl.classList.remove('recording'); };
+            r.onend = () => { btnEl.classList.remove('recording'); };
+            r.start();
         }
 
     </script>
