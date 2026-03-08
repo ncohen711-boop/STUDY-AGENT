@@ -131,3 +131,15 @@ app.get('/transcript', async (req, res) => {
 app.listen(PORT, () => {
     console.log(`Study Agent API running on port ${PORT}`);
 });
+
+// Keep-alive ping for Render free instance
+const RENDER_URL = 'https://study-agent-d26p.onrender.com';
+
+setInterval(async () => {
+    try {
+        await fetch(RENDER_URL + '/');
+        console.log('Keep-alive ping sent');
+    } catch (e) {
+        console.log('Ping failed:', e.message);
+    }
+}, 840000);
