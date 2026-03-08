@@ -1919,8 +1919,14 @@
                 .replace(/^# (.*$)/gm, '<h1>$1</h1>')
                 // Horizontal rules
                 .replace(/^---$/gm, '<hr>')
+                // Bullet points — convert lines starting with - or * to list items
+                .replace(/^[\-\*] (.+)$/gm, '<li>$1</li>')
                 // Line breaks
                 .replace(/\n/g, '<br>');
+            // Wrap consecutive <li> elements in <ul>
+            html = html.replace(/((?:<li>.*?<\/li>(?:<br>)?)+)/g, '<ul style="margin:8px 0; padding-left:20px;">$1</ul>');
+            // Remove stray <br> inside <ul>
+            html = html.replace(/<ul([^>]*)>([\s\S]*?)<\/ul>/g, (m, attrs, inner) => '<ul' + attrs + '>' + inner.replace(/<br>/g, '') + '</ul>');
             return html;
         }
 
@@ -2978,7 +2984,7 @@ ${context}`;
                 resultEl.innerHTML = `
                     <div class="result-header"><h3>📝 Summary: ${topic}</h3>
                     <button class="btn-copy" onclick="copyResult(this, 'summarizerResult')">📋 Copy</button></div>
-                    <div class="result-body">${renderMarkdown(result)}</div>`;
+                    <div class="result-body" style="line-height:1.8; color:var(--muted2);">${renderMarkdown(result)}</div>`;
 
                 saveToHistory({ type: 'summary', icon: '📝', title: topic, content: result, date: new Date().toISOString() });
             } catch (err) {
@@ -3014,7 +3020,7 @@ ${text}`;
                 resultEl.innerHTML = `
                     <div class="result-header"><h3>📝 Summary</h3>
                     <button class="btn-copy" onclick="copyResult(this, 'summarizerResult')">📋 Copy</button></div>
-                    <div class="result-body">${renderMarkdown(result)}</div>`;
+                    <div class="result-body" style="line-height:1.8; color:var(--muted2);">${renderMarkdown(result)}</div>`;
 
                 saveToHistory({ type: 'summary', icon: '📝', title: 'Text Summary', content: result, date: new Date().toISOString() });
             } catch (err) {
@@ -3067,59 +3073,68 @@ ${essay}`;
                 const result = await callAI(prompt);
                 loading.style.display = 'none';
 
-                // Parse the JSON response
+                // Robust JSON extraction — find first {...} block
                 let grade;
                 try {
-                    const cleaned = result.replace(/```json?\n?/g, '').replace(/```/g, '').trim();
-                    grade = JSON.parse(cleaned);
+                    let cleaned = result;
+                    // Strip markdown code fences
+                    cleaned = cleaned.replace(/```json\s*/gi, '').replace(/```\s*/g, '');
+                    // Extract the JSON object
+                    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+                    if (!jsonMatch) throw new Error('No JSON found');
+                    grade = JSON.parse(jsonMatch[0]);
                 } catch {
-                    // If JSON parse fails, show raw result
-                    resultEl.innerHTML = `<div class="result-header"><h3>📋 Essay Grade</h3></div>
-                        <div class="result-body">${renderMarkdown(result)}</div>`;
+                    // Fallback: show as formatted text
+                    resultEl.innerHTML = `<div class="result-header"><h3>📋 Essay Grade</h3>
+                        <button class="btn-copy" onclick="copyResult(this, 'graderResult')">📋 Copy</button></div>
+                        <div class="result-body" style="line-height:1.8; color:var(--muted2);">${renderMarkdown(result)}</div>`;
                     saveToHistory({ type: 'grader', icon: '📋', title: subject + ' Essay', content: result, date: new Date().toISOString() });
                     return;
                 }
 
                 // Render the grade card
                 const pctColor = (pct) => pct >= 80 ? '#4CAF50' : pct >= 60 ? '#FFC107' : '#f44336';
-                const overallPct = grade.percentage;
+                const overallPct = grade.percentage || 0;
 
                 let html = `
-                <div style="text-align:center; padding:32px 0 20px;">
-                    <div style="display:inline-flex; align-items:center; justify-content:center; width:100px; height:100px; border-radius:50%; border:4px solid ${pctColor(overallPct)}; font-size:2.5rem; font-weight:800; color:${pctColor(overallPct)};">${grade.letterGrade}</div>
-                    <div style="font-size:1.2rem; margin-top:12px; color:var(--muted);">${overallPct}%</div>
+                <div style="text-align:center; padding:40px 0 24px;">
+                    <div style="display:inline-flex; align-items:center; justify-content:center; width:120px; height:120px; border-radius:50%; border:5px solid ${pctColor(overallPct)}; font-size:2.8rem; font-weight:800; color:${pctColor(overallPct)}; letter-spacing:-1px;">${grade.letterGrade || '?'}</div>
+                    <div style="font-size:1.4rem; margin-top:14px; font-weight:700; color:${pctColor(overallPct)};">${overallPct}%</div>
                 </div>
-                <h3 style="margin:20px 0 12px; font-size:1.1rem;">Category Breakdown</h3>`;
+                <hr style="border:none; border-top:1px solid var(--border); margin:0 0 24px;">
+                <h3 style="margin:0 0 16px; font-size:1.1rem;">📊 Category Breakdown</h3>`;
 
-                grade.categories.forEach(cat => {
-                    const pct = Math.round((cat.score / cat.max) * 100);
+                (grade.categories || []).forEach(cat => {
+                    const pct = cat.max > 0 ? Math.round((cat.score / cat.max) * 100) : 0;
                     html += `
-                    <div style="margin-bottom:16px;">
-                        <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
-                            <span style="font-weight:600;">${cat.name}</span>
-                            <span style="color:${pctColor(pct)}; font-weight:700;">${cat.score}/${cat.max}</span>
+                    <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:12px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                            <span style="font-weight:700; font-size:0.95rem;">${cat.name}</span>
+                            <span style="color:${pctColor(pct)}; font-weight:800; font-size:1rem;">${cat.score}/${cat.max}</span>
                         </div>
-                        <div style="background:var(--border); border-radius:8px; height:8px; overflow:hidden;">
-                            <div style="width:${pct}%; height:100%; background:${pctColor(pct)}; border-radius:8px; transition:width 0.8s ease;"></div>
+                        <div style="background:var(--border); border-radius:8px; height:10px; overflow:hidden;">
+                            <div style="width:${pct}%; height:100%; background:${pctColor(pct)}; border-radius:8px; transition:width 1s ease;"></div>
                         </div>
-                        <p style="font-size:0.85rem; color:var(--muted); margin-top:4px;">${cat.feedback}</p>
+                        <p style="font-size:0.85rem; color:var(--muted); margin-top:8px; line-height:1.5;">${cat.feedback || ''}</p>
                     </div>`;
                 });
 
-                html += `<h3 style="margin:24px 0 8px; color:#4CAF50;">✅ Strengths</h3><ul style="color:var(--muted2); line-height:1.8;">`;
-                grade.strengths.forEach(s => html += `<li>${s}</li>`);
+                html += `<h3 style="margin:28px 0 10px; color:#4CAF50; font-size:1.05rem;">✅ Strengths</h3>
+                <ul style="list-style:none; padding:0; margin:0 0 16px;">`;
+                (grade.strengths || []).forEach(s => html += `<li style="padding:6px 0; color:var(--muted2); line-height:1.6;">✅ ${s}</li>`);
                 html += `</ul>`;
 
-                html += `<h3 style="margin:20px 0 8px; color:#FFC107;">💡 Areas for Improvement</h3><ul style="color:var(--muted2); line-height:1.8;">`;
-                grade.improvements.forEach(s => html += `<li>${s}</li>`);
+                html += `<h3 style="margin:20px 0 10px; color:#FFC107; font-size:1.05rem;">➡️ Areas for Improvement</h3>
+                <ul style="list-style:none; padding:0; margin:0 0 16px;">`;
+                (grade.improvements || []).forEach(s => html += `<li style="padding:6px 0; color:var(--muted2); line-height:1.6;">➡️ ${s}</li>`);
                 html += `</ul>`;
 
-                html += `<div style="margin-top:20px; padding:16px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); color:var(--muted2); line-height:1.6;">
-                    <strong style="color:#fff;">📝 Teacher Comments:</strong><br>${grade.teacherComments}
+                html += `<div style="margin-top:24px; padding:20px; background:var(--surface); border-left:4px solid #fff; border-radius:0 12px 12px 0; color:var(--muted2); line-height:1.7;">
+                    <strong style="color:#fff; font-size:1rem;">📝 Teacher Comments</strong><br><br>${grade.teacherComments || 'No comments provided.'}
                 </div>`;
 
                 resultEl.innerHTML = html;
-                saveToHistory({ type: 'grader', icon: '📋', title: subject + ' Essay — ' + grade.letterGrade, content: JSON.stringify(grade), date: new Date().toISOString() });
+                saveToHistory({ type: 'grader', icon: '📋', title: subject + ' Essay — ' + (grade.letterGrade || ''), content: JSON.stringify(grade), date: new Date().toISOString() });
             } catch (err) {
                 loading.style.display = 'none';
                 errorEl.textContent = err.message;
